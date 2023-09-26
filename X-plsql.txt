@@ -1,0 +1,254 @@
+/*PROCEDURES TO BE RUN AFTER THE FIRST ADMIN FROM X-sql.txt has been successfully created*/
+create or replace trigger order_quant2_addprofit
+before insert on order2
+FOR EACH ROW
+
+DECLARE
+	order_quant2_exception EXCEPTION;
+	
+	var1 number;
+    var2 number;
+	var3 VARCHAR2(14);
+    var4 varchar2(55);
+    i number;
+    --cursor cursor1 is select dcode,icode,to_timestamp(to_char(iexdate ,'DD-MM-YYYY HH:MI:SS')) from inventory where (to_timestamp(to_char(iexdate ,'DD-MM-YYYY HH:MI:SS'))) in( select min(TO_TIMESTAMP(to_char(iexdate ,'DD-MM-YYYY HH:MI:SS')))from inventory where dcode=12) AND rownum=1;
+--cursorfetch cursor1%rowtype;
+    unavailable_q2 exception;
+BEGIN
+    
+	select count(icode) into var1 from inventory where inventory.dcode=:new.dcode;--this could be count in inventory
+    --dbms_output.put_line('24'||var1);
+    
+	if (var1 > (:new.oquant) ) then
+    --dbms_output.put_line('25');
+    IF (var1- :new.oquant>=10) then
+    --dbms_output.put_line('26'||var1);
+    select sellprice into var2 from drugs where drugs.dcode=:new.dcode;
+    i:=1;--dbms_output.put_line('27'||var1);
+    while i<=:new.oquant loop
+        dbms_output.put_line('28'||var1);
+        select icode into var4 from inventory where inventory.icode in (select icode from inventory where (to_timestamp(to_char(inventory.iexdate ,'DD-MM-YYYY HH:MI:SS'))) in( select min(TO_TIMESTAMP(to_char(iexdate ,'DD-MM-YYYY HH:MI:SS')))from inventory where inventory.dcode=:new.dcode) AND rownum=1);
+        --find_min_ofinv (:new.dcode) into var4;--if i wanted the funtion
+        delete from inventory where icode=var4;
+        dbms_output.put_line('33'||var4);
+        i:=i+1;
+    end loop;
+	:new.invoice:=var2*:new.oquant;
+    
+    --update drugs set profitmonth= profitmonth+:new.invoice where drugs.dcode=:new.dcode;
+    --update drugs set profityear=profityear+:new.invoice where drugs.dcode=:new.dcode;
+    update pvlhths set gain=gain+10*:new.invoice/100 WHERE PID=:NEW.PREF;
+    --update order2 set katastasi='completed';
+    dbms_output.put_line('28');
+    --here would be the failed_requests update +1; WHICH WOULD BE A DOUBLE LINED ATTRIBUTE
+    else raise unavailable_q2;
+    end if;
+    else raise unavailable_q2 ;
+	END IF;
+	
+EXCEPTION 
+	WHEN unavailable_q2 THEN RAISE_APPLICATION_ERROR(-20003,'not available');
+	
+END;
+/
+
+create or replace trigger order_quant1_addprofit
+before insert on order1
+FOR EACH ROW
+
+DECLARE
+	order_quant1_exception EXCEPTION;
+	
+	var1 number;
+    var2 number;
+	var3 VARCHAR2(14);
+    var4 varchar2(55);
+    
+    /*var5 number;
+    oldinvvar number;*/
+    var6 varchar2(52);
+    i number;
+    --cursor cursor1 is select dcode,icode,to_timestamp(to_char(iexdate ,'DD-MM-YYYY HH:MI:SS')) from inventory where (to_timestamp(to_char(iexdate ,'DD-MM-YYYY HH:MI:SS'))) in( select min(TO_TIMESTAMP(to_char(iexdate ,'DD-MM-YYYY HH:MI:SS')))from inventory where dcode=12) AND rownum=1;
+--cursorfetch cursor1%rowtype;
+    unavailable_q1 exception;
+BEGIN
+ IF INSERTING THEN
+
+ 
+	select count(icode) into var1 from inventory where inventory.dcode=:new.dcode;--this could be count in inventory
+    --dbms_output.put_line('24'||var1);
+    
+        if (var1 > (:new.oquant) ) then
+        --dbms_output.put_line('25');
+            IF (var1- :new.oquant>=10) then
+            --dbms_output.put_line('26'||var1);
+            select sellprice into var2 from drugs where drugs.dcode=:new.dcode;--here
+                i:=1;   --dbms_output.put_line('27'||var1);
+                while i<=:new.oquant loop
+                    dbms_output.put_line('28'||var1);
+                    select icode into var4 from inventory where inventory.icode in (select icode from inventory where (to_timestamp(to_char(inventory.iexdate ,'DD-MM-YYYY HH:MI:SS'))) in( select min(TO_TIMESTAMP(to_char(iexdate ,'DD-MM-YYYY HH:MI:SS')))from inventory where inventory.dcode=:new.dcode) AND rownum=1);
+                    --find_min_ofinv (:new.dcode) into var4;--if i wanted the funtion
+                    delete from inventory where icode=var4;
+                    dbms_output.put_line('33'||var4);
+                    i:=i+1;
+                end loop;
+            :new.invoice:=var2*:new.oquant;
+            --var6:= :new.phref;
+            --update drugs set profitmonth= profitmonth+:new.invoice where drugs.dcode=:new.dcode;
+            --update drugs set profityear=profityear+:new.invoice where drugs.dcode=:new.dcode;
+            if (NOT(trim(:new.phref) is null))then
+            update pvlhths set gain=gain+10*:new.invoice/100 where pid=:new.pid;
+            end if;
+            --update order2 set katastasi='completed';
+            dbms_output.put_line('28');
+            --here would be the failed_requests update +1; WHICH WOULD BE A DOUBLE LINED ATTRIBUTE
+            else raise unavailable_q1;
+            end if;
+        else raise unavailable_q1 ;
+        END IF;
+
+END IF;
+/*IF UPDATING THEN
+
+    var5:=:new.oquant-:old.quant;--diff in new - old quantity same comparisons
+    select count(icode) into var1 from inventory where inventory.dcode=:new.dcode;
+    
+    if (var1 > (var5) ) then
+        IF (var1- var5>=10) then
+            select sellprice into var2 from drugs where drugs.dcode=:new.dcode;
+                i:=1;
+                while i<=:new.oquant loop
+                dbms_output.put_line('28'||var1);
+                    select icode into var4 from inventory where inventory.icode in (select icode from 
+                    inventory where (to_timestamp(to_char(inventory.iexdate ,'DD-MM-YYYY HH:MI:SS'))) 
+                    in( select min(TO_TIMESTAMP(to_char(iexdate ,'DD-MM-YYYY HH:MI:SS')))from inventory where inventory.dcode=:new.dcode) AND rownum=1);
+                    delete from inventory where icode=var4;
+                    i:=i+1;
+                end loop;
+            oldinvvar:=ABS(:old.invoice-:new.invoice);
+            :new.invoice:=:old.invoice+(var2*var5);
+            if (NOT(:new.phref=""))then
+            update pvlhths set gain=gain+10*:new.invoice/100 where pid=:new.pid;
+            end if;
+        else raise unavailable_q1;
+        end if;
+    else raise unavailable_q1 ;
+	END IF;
+    
+    
+END IF;*/
+
+EXCEPTION 
+	WHEN unavailable_q1 THEN RAISE_APPLICATION_ERROR(-20003,'not available');
+	
+END;
+/
+
+
+create or replace procedure add_quant_toinv(dcode in VARCHAR2,iexdate in date,purchasedcost in number,aid in VARCHAR2,quantin IN NUMBER)
+IS
+i number;
+
+begin
+i:=1;
+while i<=quantin loop
+insert into inventory (icode,dcode,iexdate,purchasedcost,aid)VALUES
+(INVSEQ.nextval,dcode,to_date(iexdate),purchasedcost,aid);
+dbms_output.put_line (i);
+i:=i+1;
+end loop;
+END;
+/
+CREATE OR REPLACE PROCEDURE sub_quant_frominv(dcodein in VARCHAR2,iexdatein in date,purchasedcostin in number,aidin in VARCHAR2,quantin IN NUMBER)
+IS
+i number;
+
+begin
+i:=1;
+while i<=quantin loop
+delete from inventory where
+inventory.dcode=dcodein AND inventory.iexdate=iexdatein AND inventory.purchasedcost=purchasedcostin AND inventory.aid=aidin
+AND ROWNUM=1;/*again here we could have a system date as well but it really wouldnt affect us since all of the values NEED to be filled*/
+dbms_output.put_line (i);
+i:=i+1;
+end loop;
+END;
+/
+CREATE OR REPLACE trigger adjust_dquant_andcost
+after insert or delete on inventory
+for each row
+DECLARE
+date_exc exception;
+BEGIN
+IF INSERTING THEN
+
+IF (NOT(:new.iexdate-sysdate>160)) THEN
+raise date_exc;
+else
+update drugs set dquant=dquant+1 WHERE DCODE=:NEW.DCODE;
+UPDATE DRUGS SET PROFITMONTH=PROFITMONTH-:NEW.PURCHASEDCOST WHERE DCODE=:NEW.DCODE;
+UPDATE DRUGS SET PROFITYEAR=PROFITYEAR-:NEW.PURCHASEDCOST WHERE DCODE=:NEW.DCODE;
+end IF;
+END IF;
+
+IF deleting THEN
+UPDATE DRUGS SET DQUANT=DQUANT-1 WHERE DCODE=:NEW.DCODE;
+UPDATE DRUGS SET PROFITMONTH=PROFITMONTH+:NEW.PURCHASEDCOST WHERE DCODE=:NEW.DCODE;
+UPDATE DRUGS SET PROFITYEAR=PROFITYEAR+:NEW.PURCHASEDCOST WHERE DCODE=:NEW.DCODE;
+END IF;
+
+EXCEPTION 
+	WHEN date_exc THEN RAISE_APPLICATION_ERROR(-20003,'not available');
+END;
+/
+
+create or replace function find_min_ofinv (dcodein in varchar2)--out retval varchar2
+return varchar2
+as
+retval varchar(55);
+begin
+SELECT icode into retval FROM (SELECT *FROM inventory where dcode=dcodein ORDER BY iexdate asc)WHERE  rownum = 1;
+end;
+/
+
+create or replace procedure is_user(userid in VARCHAR2,passvar in varchar2,usertype in varchar2,is_userout out int)
+IS
+notauser EXCEPTION;
+CURSOR adcursor IS (SELECT * from admin where admin.aid=aid and admin.pass=passvar);cursorfetch1 adcursor%rowtype;
+CURSOR pvlcursor IS (SELECT * from PVLHTHS where PVLHTHS.pid=userid and PVLHTHS.pass=passvar);cursorfetch2 pvlcursor%rowtype;
+cursor phcursor is (select * from pharmakopoios where pharmakopoios.phid=userid and pharmakopoios.pass=passvar);cursorfetch3 phcursor%rowtype;
+
+var1 int;
+begin
+is_userout:=0;
+if(usertype='ADMIN')THEN open adcursor;fetch adcursor into cursorfetch1;
+    if adcursor%FOUND=TRUE THEN CLOSE adcursor;is_userout:=1;end if;
+elsif(usertype='SELLER')THEN open pvlcursor;fetch pvlcursor into cursorfetch2;
+    if pvlcursor%FOUND=TRUE THEN CLOSE pvlcursor;is_userout:=1;end if;
+elsif (usertype='PHARMACIST')THEN open phcursor;fetch phcursor into cursorfetch3;
+    if phcursor%FOUND=TRUE THEN CLOSE phcursor;is_userout:=1;end if;
+else raise notauser;
+end if;
+
+
+EXCEPTION
+WHEN notauser THEN 
+RAISE_APPLICATION_ERROR(-20003,'user does not exist'||userid ||passvar ||usertype );
+
+END;
+/
+
+create or replace trigger phpass /*not needed now handle it in forms no time*/
+before insert on pharmakopoios
+FOR EACH ROW
+BEGIN
+UPDATE PHARMAKOPOIOS SET PHARMAKOPOIOS.PASS='0000' where PHARMAKOPOIOS.PID=:NEW.PID;
+END;
+/
+create or replace trigger pvlpass
+before insert on pvlhths
+FOR EACH ROW
+BEGIN
+UPDATE PVLHTHS SET PVLHTHS.PASS='0000' where PVLHTHS.PID=:NEW.PID;
+END;
+/

@@ -1,0 +1,107 @@
+/* FOR ORACLE SQL
+FIRST CREATE A USER "xaccess identified by pass" 
+AND then a CONNECTION "xaccess_user" using the above user*/
+
+
+/*FIRST PART*/
+create user xaccess identified by pass;
+grant connect,resource,create view to xaccess;
+alter user xaccess quota unlimited on users;
+
+
+
+/*
+--here u create a CONNECTION "xaccess_user" using the above user
+--this is what we ll be using to connect with java
+--("jdbc:oracle:thin:@127.0.0.1:1521:xe","xaccess","pass")
+*/
+
+/* SECOND PART*/
+
+/*now create the db inside the xaccess_user*/
+create table PVLHTHS (Pid VARCHAR2(14)NOT NULL,Aid VARCHAR2(14)NOT NULL,
+fname VARCHAR2(14)NOT NULL,
+lname VARCHAR2(14)NOT NULL,
+pass VARCHAR2(20) NOT NULL,gain NUMBER DEFAULT(0),email VARCHAR2(30) not null,
+PRIMARY KEY (Pid),FOREIGN KEY (Aid) REFERENCES
+ADMIN(Aid));
+
+create table PHARMAKOPOIOS (PHid VARCHAR2(14)NOT NULL,Pid VARCHAR2(14)NOT NULL,
+fname VARCHAR2(14)NOT NULL,
+lname VARCHAR2(14)NOT NULL,
+pass VARCHAR2(20) NOT NULL, email VARCHAR2(30) not null,
+PRIMARY KEY (PHid),FOREIGN KEY (Pid)REFERENCES
+PVLHTHS(Pid));
+
+create table DRUGS(dcode VARCHAR2(20)NOT NULL,dname VARCHAR2(14)NOT NULL,
+dcat VARCHAR2(14)NOT NULL,company VARCHAR2(14)NOT NULL,dquality NUMBER,
+sellprice NUMBER NOT NULL,profitmonth NUMBER DEFAULT(0),profityear NUMBER DEFAULT(0),
+dquant NUMBER DEFAULT(0),
+PRIMARY KEY (dcode),
+CONSTRAINT chk_sellprice check(sellprice >0));
+
+create table order1(o1id VARCHAR2(14)NOT NULL,dcode VARCHAR2(14)NOT NULL,
+pid VARCHAR2(14)NOT NULL,oquant NUMBER NOT NULL,
+KATASTASI VARCHAR2(20) DEFAULT('in_progress'),o1date DATE default (TO_TIMESTAMP(sysdate ,'DD-MM-YYYY HH:MI:SS')),
+phref VARCHAR2(14)NOT NULL,invoice NUMBER,
+PRIMARY KEY(o1id,dcode,Pid),
+FOREIGN KEY (dcode) REFERENCES DRUGS(dcode),
+FOREIGN KEY (Pid) REFERENCES PVLHTHS(PID),
+CONSTRAINT chk_katastasi1 check(KATASTASI IN ('canceled','completed','in_progress')),
+CONSTRAINT chk_q1 check(oquant>0));
+
+create table order2(o2id VARCHAR2(14)NOT NULL,dcode VARCHAR2(14)NOT NULL,
+phid VARCHAR2(14)NOT NULL,oquant NUMBER NOT NULL,
+KATASTASI VARCHAR2(20) DEFAULT('in_progress'),o2date DATE default (TO_TIMESTAMP(sysdate ,'DD-MM-YYYY HH:MI:SS')),
+pref VARCHAR2(14)NOT NULL,invoice NUMBER,
+PRIMARY KEY(o2id,dcode,PHid),
+FOREIGN KEY (dcode) REFERENCES DRUGS(dcode),
+FOREIGN KEY (PHID) REFERENCES PHARMAKOPOIOS(PHID),
+CONSTRAINT chk_katastasi2 CHECK(KATASTASI IN ('canceled','completed','in_progress')),
+CONSTRAINT chk_q2 CHECK (oquant>0));
+
+create table Inventory(icode VARCHAR2(14)NOT NULL,dcode VARCHAR2(14),iexdate DATE NOT NULL,
+purchasedcost number not null,PRIMARY KEY(icode),FOREIGN KEY(dcode) REFERENCES DRUGS(dcode));
+
+alter table inventory add aid varchar2(14) default('1') constraint add_aid_i references admin(aid) ;
+ALTER TABLE PVLHTHS MODIFY PASS DEFAULT('0000');
+ALTER TABLE PVLHTHS MODIFY PASS NULL;
+ALTER TABLE PHARMAKOPOIOS MODIFY PASS DEFAULT('0000');
+ALTER TABLE PHARMAKOPOIOS MODIFY PASS NULL;
+alter table order1 MODIFY phref null;
+ALTER TABLE inventory MODIFY (iexdate DATE);
+alter table order2 modify (o2date date );
+alter table order2 modify o2date default (to_date(sysdate ,'DD-MM-YYYY HH24:MI:SS'));
+alter table order1 modify (o1date date );
+alter table order1 modify o1date default (to_date(sysdate ,'DD-MM-YYYY HH24:MI:SS'));
+@spool.sql;
+
+CREATE SEQUENCE ADMINSeq INCREMENT BY 1 START WITH 1;
+CREATE SEQUENCE o1Seq INCREMENT BY 1 START WITH 1;
+CREATE SEQUENCE o2Seq INCREMENT BY 1 START WITH 1;
+CREATE SEQUENCE PSeq INCREMENT BY 1 START WITH 1;
+CREATE SEQUENCE PHSeq INCREMENT BY 1 START WITH 1;
+CREATE SEQUENCE invSeq INCREMENT BY 1 START WITH 1;
+
+/*add your admin in the admin table. we re using "1" as the id and "0000s" as the password */
+
+insert into ADMIN VALUES('1','N','N','0000s');
+
+/*NOW YOU OPEN X-plsql.txt and RUN THE PROCEDURES*/
+
+/*deleting db if need be. if there s a key violation error simply run them a couple times
+till everything is properly deleted, THEN u can start creating again*/
+/*delete from order1;
+delete from order2;
+delete from inventory;
+delete from drugs;
+delete from PHARMAKOPOIOS;
+delete from pvlhths;
+delete from admin;
+drop order1;
+drop order2;
+drop inventory;
+drop drugs;
+drop pharmakopoios;
+drop pvlhths;
+drop admin;*/

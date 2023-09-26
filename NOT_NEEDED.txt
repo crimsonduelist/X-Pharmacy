@@ -1,0 +1,56 @@
+	/*IMPORTANT IF YOU DO DECIDE TO RUN THESE WHICH IS NOT RECOMMENDED
+	BE SURE TO RUN STATEMENTS(CTRL+ENTER) NOT SCRIPT */
+/*sample annonymous blocks*/
+declare
+retval varchar2(55);
+begin
+for i in 1..30 loop
+insert into inventory (icode,dcode,iexdate,purchasedcost)VALUES(INVSEQ.nextval,'1',(TO_TIMESTAMP(to_char(sysdate+111 ,'DD-MM-YYYY HH:MI:SS'))),2);dbms_output.put_line (retval);
+end loop;
+
+end;
+/
+declare
+retval int;
+begin
+is_user('1','000','PHARMACIST',retval);
+dbms_output.put_line (retval);
+end;
+/
+BEGIN
+
+add_quant_toinv('s1',TO_DATE('29/9/2029','DD/MM/YY HH:MI:SS'),33,'1',33);
+
+
+end;
+/
+
+BEGIN
+sub_quant_frominv('1',TO_DATE('29/9/29','DD/MM/YY HH:MI:SS'),33,'1',1);
+end;
+/
+/*sample inserts*/
+insert into ADMIN VALUES('1','N','N','0000s');
+insert into PVLHTHS(pid,aid,fname,lname,pass,email)VALUES(PSeq.NEXTVAL,1,'N','N','0000','email1');
+insert into PHARMAKOPOIOS(phid,pid,fname,lname,pass,email)VALUES(PHSeq.NEXTVAL,1,'N','N','0000','email1');
+insert into drugs(dcode,dname,dcat,company,dquality,sellprice)values('1','dn1','dc1','c1',6,2);
+insert into drugs(dcode,dname,dcat,company,dquality,sellprice)values('12','dn1','dc1','c1',6,2);
+insert into order1(o1id,dcode,pid,oquant,phref)VALUES(O1SEQ.nextval,'s1','1',2,'1');
+insert into order2(o2id,dcode,phid,oquant,pref)VALUES(O2SEQ.nextval,'s1','1',2,'1');
+insert into inventory (icode,dcode,iexdate,purchasedcost)VALUES(INVSEQ.nextval,'1',TO_DATE('19/02/19','DD/MM/YY'),2);
+/*sample updates*/
+UPDATE DRUGS SET dname='dc1',dcat='dc1',company='c1',dquality='6',sellprice='7' where dcode ='12';
+/*sample sellects*/
+SELECT ICODE FROM INVENTORY WHERE (DCODE IN (SELECT DCODE FROM INVENTORY WHERE DCODE=12 ORDER BY IEXDATE ASC) AND (ROWNUM=1));
+select icode,dcode,to_timestamp(to_char(iexdate ,'DD-MM-YYYY HH:MI:SS')) from inventory where dcode=12;
+select icode from inventory where (to_timestamp(to_char(iexdate ,'DD-MM-YYYY HH:MI:SS'))) in( select min(TO_TIMESTAMP(to_char(iexdate ,'DD-MM-YYYY HH:MI:SS')))from inventory where dcode=12) AND rownum=1;
+        select to_timestamp(to_char(iexdate ,'DD-MM-YYYY HH:MI:SS')) from inventory where (to_timestamp(to_char(iexdate ,'DD-MM-YYYY HH:MI:SS'))) in( select min(TO_TIMESTAMP(to_char(iexdate ,'DD-MM-YYYY HH:MI:SS')))from inventory where dcode=:new.dcode) AND rownum=1;
+         select icode from inventory where (inventory.dcode in (select dcode from inventory where 12=inventory.dcode order by iexdate)) and rownum=1;
+         select * from inventory where dcode = 1 ORDER BY IEXDATE ASC;--first icode of this
+         SELECT * FROM (SELECT *FROM inventory where dcode=1 ORDER BY iexdate asc)WHERE  rownum = 1;--should match this
+        SELECT IEXDATE-SYSDATE FROM INVENTORY where IEXDATE-SYSDATE>0;
+select *from admin where exists(select * from admin where aid='1');
+select *from inventory where purchasedcost=3 order by iexdate asc;
+select *from inventory where dcode='12';
+select count(icode) from inventory where dcode=12;
+SELECT o2id,dcode,phid,oquant,katastasi,o2date,pref,invoice FROM order2 where phid = '1';
